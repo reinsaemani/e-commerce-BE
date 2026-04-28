@@ -1,7 +1,7 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.2
-    container_name: e-commerce-backend.prod
+    image: ${DOCKER_USERNAME}/ecommerce-backend:${APP_VERSION}
+    container_name: e-commerce-backend
     ports:
       - "5050:5050"
     env_file:
@@ -17,7 +17,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: test
-      MYSQL_DATABASE: e-commerce.prod
+      MYSQL_DATABASE: ecommerce
       MYSQL_USER: test
       MYSQL_PASSWORD: test
     ports:

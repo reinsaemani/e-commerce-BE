@@ -5,10 +5,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# hanya dependency file dulu (CACHE LAYER PENTING)
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfile --prod=false --reporter=append-only
+RUN pnpm install --frozen-lockfile --prod=false
 
 
 # ---------- Stage 2: builder ----------
@@ -33,10 +32,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-ENV APP_ENV=production
+ENV NODE_ENV=production
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
 
-# copy hasil build saja
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
