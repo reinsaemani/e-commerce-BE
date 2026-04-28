@@ -1,0 +1,21 @@
+FROM node:20
+
+LABEL Name="e-commerce-backend"
+LABEL Version="1.0.0"
+LABEL description="Express API E-Commerce"
+LABEL author="Rein"
+
+WORKDIR /app
+
+# install pnpm global
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install
+
+COPY . .
+
+EXPOSE 5050
+
+CMD ["pnpm", "run", "dev"]
