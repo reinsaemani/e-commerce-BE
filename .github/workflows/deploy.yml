@@ -23,14 +23,16 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Image
-        run: |
-          docker build \
-            -t $IMAGE:${{ github.ref_name }} \
-            -t $IMAGE:latest \
-            -f Dockerfile.prod .
-
-          docker push $IMAGE:${{ github.ref_name }}
-          docker push $IMAGE:latest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build-and-push

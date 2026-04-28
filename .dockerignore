@@ -1,7 +1,7 @@
 node_modules
-dist
-npm-debug.log
-Dockerfile
-Dockerfile.*
 .git
 .gitignore
+Dockerfile*
+docker-compose*
+dist
+.env
