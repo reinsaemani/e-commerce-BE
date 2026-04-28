@@ -8,7 +8,7 @@ export const cookieOptions = () => {
 
   return {
     httpOnly: true,
-    secure: true, // Set to true in production when using HTTPS
+    secure: false, // Set to true in production when using HTTPS
     sameSite: isProd ? "none" as const : "lax" as const,
     path: "/",
   };
