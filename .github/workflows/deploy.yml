@@ -86,6 +86,6 @@ jobs:
 
             sleep 10
 
-            docker exec e-commerce-backend.prod pnpm prisma migrate deploy
+            docker exec e-commerce-backend pnpm prisma migrate deploy
 
             docker ps
