@@ -1,0 +1,34 @@
+services:
+  backend:
+    image: reinsaemani/e-commerce-backend:v1.0.1
+    container_name: e-commerce-backend.prod
+    ports:
+      - "5050:5050"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: npm start
+
+  db:
+    image: mysql:v1.0.1
+    container_name: e-commerce-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: e-commerce.prod
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u test -ptest"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
