@@ -1,33 +1,33 @@
-# ---------- Stage 1: Builder ----------
+# ---------- Stage 1: deps ----------
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# hanya dependency file dulu (CACHE LAYER PENTING)
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install --frozen-lockfile --prod=false --reporter=append-only
+
+
+# ---------- Stage 2: builder ----------
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-COPY package.json pnpm-lock.yaml ./
-
-COPY package*.json ./
-RUN pnpm install --include=dev
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV DATABASE_URL="mysql://dummy:dummy@localhost:3306/dummy"
 
 RUN pnpm run build
 
-# 🔥 prune + clean
-RUN pnpm prune --omit=dev --omit=optional \
-    && pnpm cache clean --force \
-    && rm -rf node_modules/.cache
 
-# ---------- Stage 2: Production ----------
+# ---------- Stage 3: production ----------
 FROM node:20-alpine
-
-LABEL Name="e-commerce-backend"
-LABEL Version="1.0.0"
-LABEL description="Express API E-Commerce"
-LABEL author="Rein"
 
 WORKDIR /app
 
@@ -36,11 +36,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV APP_ENV=production
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
 
+# copy hasil build saja
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 5050
 
