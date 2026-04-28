@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.9
+    image: reinsaemani/ecommerce-backend:v1.0.10
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
