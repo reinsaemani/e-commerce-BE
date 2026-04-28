@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/e-commerce-backend:v1.0.0
+    image: reinsaemani/e-commerce-backend:v1.0.1
     container_name: e-commerce-backend.prod
     ports:
       - "5050:5050"
@@ -9,10 +9,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: npm start
+    command: pnpm start
 
   db:
-    image: mysql:v1.0.0
+    image: mysql:8
     container_name: e-commerce-db
     restart: always
     environment:
