@@ -1,7 +1,5 @@
 node_modules
-.git
-.gitignore
-Dockerfile*
-docker-compose*
-dist
 .env
+dist
+*.log
+.dockerignore
