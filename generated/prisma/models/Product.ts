@@ -516,10 +516,6 @@ export type ProductUncheckedUpdateManyWithoutCreatedByNestedInput = {
   deleteMany?: Prisma.ProductScalarWhereInput | Prisma.ProductScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type IntFieldUpdateOperationsInput = {
   set?: number
   increment?: number

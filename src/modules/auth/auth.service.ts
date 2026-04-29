@@ -3,6 +3,9 @@ import { prisma } from "../../utils/prisma";
 import bcrypt from "bcryptjs";
 import { User } from "../../../generated/prisma/client";
 
+const JWT_SECRET = process.env.JWT_SECRET!;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+
 export const register = async (data: {
   name: string;
   email: string;
@@ -27,31 +30,46 @@ export const getAuthByEmail = async (
   });
 };
 
-export const JWT_CONFIG = {
-  secret: process.env.JWT_SECRET!,
-  expiresIn: (process.env.JWT_EXPIRES_IN || "1d") as "1d" | "7d" | "30d",
+
+
+// ACCESS TOKEN (short)
+const generateAccessToken = (user: any) => {
+  return jwt.sign(
+    { id: user.id, role: user.role },
+    JWT_SECRET,
+    { expiresIn: "15m" }
+  );
+};
+
+// REFRESH TOKEN (long)
+const generateRefreshToken = (user: any) => {
+  return jwt.sign(
+    { id: user.id },
+    REFRESH_SECRET,
+    { expiresIn: "7d" }
+  );
 };
 
 export const login = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+  const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) throw new Error("User not found");
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new Error("Invalid password");
 
-  const token = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET as string,
-    {  expiresIn: JWT_CONFIG.expiresIn, }
-  );
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
 
-  // remove sensitive data
-  const { password: _, ...safeUser } = user;
+  // simpan refresh token ke DB (IMPORTANT)
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
 
-  return { token, user: safeUser };
+  const { password: _, refreshToken: __, ...safeUser } = user;
+
+  return { accessToken, refreshToken, user: safeUser };
 };
 
 export const me = async (userId: string) => {

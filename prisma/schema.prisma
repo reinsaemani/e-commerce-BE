@@ -27,6 +27,8 @@ model User {
   password  String
   role      Role     @default(USER)
 
+  refreshToken String?  @db.Text
+
   products  Product[] // jika admin bikin product
   orders    Order[]
 

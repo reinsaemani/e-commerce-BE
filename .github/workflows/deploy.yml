@@ -11,7 +11,7 @@ env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
 
 # =========================
-# BUILD (push ke main)
+# BUILD (main branch)
 # =========================
 jobs:
   build:
@@ -41,55 +41,56 @@ jobs:
           cache-to: type=gha,mode=max
 
   # =========================
-  # RELEASE (tag → version)
+  # RELEASE (tag versioning)
   # =========================
   release:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: docker/login-action@v3
+      - name: Login Docker
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Pull latest
-        run: docker pull $IMAGE:latest
+      - name: Pull latest image
+        run: docker pull ${{ env.IMAGE }}:latest
 
       - name: Tag version
-        run: docker tag $IMAGE:latest $IMAGE:${{ github.ref_name }}
+        run: docker tag ${{ env.IMAGE }}:latest ${{ env.IMAGE }}:${{ github.ref_name }}
 
       - name: Push version
-        run: docker push $IMAGE:${{ github.ref_name }}
+        run: docker push ${{ env.IMAGE }}:${{ github.ref_name }}
 
   # =========================
-  # DEPLOY (tag → VPS)
+  # DEPLOY (VPS)
   # =========================
   deploy:
-    needs: release
-    if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
+  if: github.ref_type == 'tag'
+  needs: release
+  runs-on: ubuntu-latest
 
-    steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-            cd ~/e-commerce-BE
+  steps:
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          set -e
 
-            git fetch origin
-            git reset --hard origin/main
+          cd ~/e-commerce-BE
 
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
+          export IMAGE=${{ secrets.DOCKER_USERNAME }}/ecommerce-backend:${{ github.ref_name }}
 
-            sleep 10
+          docker-compose -f docker-compose.prod.yml down
+          docker-compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml up -d
 
-            docker exec e-commerce-backend sh -c "pnpm prisma migrate deploy"
+          sleep 10
 
-            docker ps
+          docker exec e-commerce-backend pnpm prisma migrate deploy
+
+          docker ps

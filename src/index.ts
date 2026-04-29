@@ -9,6 +9,9 @@ import { notFoundHandler } from "./middleware/not-found";
 import orderRoutes from "./modules/order/order.routes";
 import productRoutes from "./modules/product/product.routes";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import { logger } from "./utils/logger";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -24,15 +27,30 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: "Too many requests, slow down",
+});
+
+
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts, try again later",
+});
+
+
 // Middleware
 app.use(cors(corsOptions));
-
-
+app.use(helmet());
+app.use(globalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
 app.use(requestLogger);
+app.use(logger);
 
 
 
@@ -52,10 +70,12 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/auth/login", loginLimiter);
 app.use("/auth", authRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
+
 
 // Not Found Middleware
 app.use(notFoundHandler);

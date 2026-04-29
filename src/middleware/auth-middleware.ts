@@ -9,7 +9,7 @@ type DecodedToken = {
 
 const protectAuth = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1] || req.cookies?.jwt;
+  const token = req.cookies?.accessToken || authHeader?.split(" ")[1] || req.cookies?.jwt;
 
   if (!token) {
     return res.status(401).json({ message: "Unauthorized - you need to login" });
