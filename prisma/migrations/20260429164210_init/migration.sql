@@ -10,9 +10,6 @@ DROP INDEX `OrderItem_productId_fkey` ON `orderitem`;
 -- DropIndex
 DROP INDEX `Product_createdById_fkey` ON `product`;
 
--- AlterTable
-ALTER TABLE `user` ADD COLUMN `refreshToken` TEXT NULL;
-
 -- AddForeignKey
 ALTER TABLE `Product` ADD CONSTRAINT `Product_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
