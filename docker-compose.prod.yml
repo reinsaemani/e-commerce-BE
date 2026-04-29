@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${IMAGE}
+    image: reinsaemani/ecommerce-backend:v1.0.24
     container_name: e-commerce-backend
     restart: always
     ports:
