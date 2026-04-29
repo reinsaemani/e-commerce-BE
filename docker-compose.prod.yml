@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.27
+    image: reinsaemani/ecommerce-backend:v1.0.28
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -20,6 +20,8 @@ services:
       MYSQL_DATABASE: ecommerce
       MYSQL_USER: test
       MYSQL_PASSWORD: test
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
