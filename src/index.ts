@@ -11,7 +11,6 @@ import productRoutes from "./modules/product/product.routes";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import { logger } from "./utils/logger";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -50,7 +49,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(requestLogger);
-app.use(logger);
 
 
 
