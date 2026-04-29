@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.25
+    image: reinsaemani/ecommerce-backend:v1.0.26
     container_name: e-commerce-backend
     restart: always
     ports:
@@ -10,6 +10,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    command: pnpm start
 
   db:
     image: mysql:8
