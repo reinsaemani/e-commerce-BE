@@ -23,7 +23,6 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 204,
 };
-console.log("CORS ORIGIN:", process.env.ORIGIN),
 
 // Middleware
 app.use(cors(corsOptions));
@@ -46,7 +45,14 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK", uptime: process.uptime() });
 });
 
-app.use("/", authRoutes);
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Reintech API is running 🚀"
+  });
+});
+
+app.use("/auth", authRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);

@@ -8,7 +8,7 @@ export const cookieOptions = () => {
 
   return {
     httpOnly: true,
-    secure: false, // Set to true in production when using HTTPS
+    secure: true, // Set to true in production when using HTTPS
     sameSite: isProd ? "none" as const : "lax" as const,
     path: "/",
   };
@@ -27,7 +27,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const result = await authService.login(req.body.email, req.body.password);
 
-    res.cookie("jwt", result.token, {
+    res.cookie("jwt", result.user, {
       ...cookieOptions(),
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
