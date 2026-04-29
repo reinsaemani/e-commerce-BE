@@ -1,8 +1,7 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.26
+    image: reinsaemani/ecommerce-backend:v1.0.27
     container_name: e-commerce-backend
-    restart: always
     ports:
       - "5050:5050"
     env_file:
