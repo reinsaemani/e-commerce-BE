@@ -11,7 +11,7 @@ env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
 
 # =========================
-# BUILD (main branch)
+# BUILD (push ke main)
 # =========================
 jobs:
   build:
@@ -41,34 +41,33 @@ jobs:
           cache-to: type=gha,mode=max
 
   # =========================
-  # RELEASE (tag versioning)
+  # RELEASE (tag → version)
   # =========================
   release:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Login Docker
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Pull latest image
-        run: docker pull ${{ env.IMAGE }}:latest
+      - name: Pull latest
+        run: docker pull $IMAGE:latest
 
       - name: Tag version
-        run: docker tag ${{ env.IMAGE }}:latest ${{ env.IMAGE }}:${{ github.ref_name }}
+        run: docker tag $IMAGE:latest $IMAGE:${{ github.ref_name }}
 
       - name: Push version
-        run: docker push ${{ env.IMAGE }}:${{ github.ref_name }}
+        run: docker push $IMAGE:${{ github.ref_name }}
 
   # =========================
-  # DEPLOY (VPS)
+  # DEPLOY (tag → VPS)
   # =========================
   deploy:
-    if: github.ref_type == 'tag'
     needs: release
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
 
     steps:
@@ -80,18 +79,17 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-
             cd ~/e-commerce-BE
 
-            export IMAGE=${{ secrets.DOCKER_USERNAME }}/ecommerce-backend:${{ github.ref_name }}
+            git fetch origin
+            git reset --hard origin/main
 
             docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml pull
-            IMAGE=${{ secrets.DOCKER_USERNAME }}/ecommerce-backend:${{ github.ref_name }} \
-            docker-compose -f docker-compose.prod.yml up -d --pull always --force-recreate
+            docker-compose -f docker-compose.prod.yml up -d
 
             sleep 10
 
-            docker exec e-commerce-backend pnpm prisma migrate deploy
+            docker exec e-commerce-backend sh -c "pnpm prisma migrate deploy"
 
             docker ps
