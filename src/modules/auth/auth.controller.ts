@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import * as authService from "./auth.service";
-import { loginSchema } from "../../types/zod";
 
 
 export const cookieOptions = () => {
@@ -27,7 +26,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const result = await authService.login(req.body.email, req.body.password);
 
-    res.cookie("jwt", result.user, {
+    res.cookie("jwt", result.token, {
       ...cookieOptions(),
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });

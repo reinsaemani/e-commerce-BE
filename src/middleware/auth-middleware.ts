@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwtHandler";
 import { getUserByIdService } from "../modules/user/user.service";
 
@@ -7,41 +7,32 @@ type DecodedToken = {
   role: string;
 };
 
-const protectAuth = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
-  const token = request.cookies?.jwt;
+const protectAuth = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(" ")[1] || req.cookies?.jwt;
 
   if (!token) {
-    return response
-      .status(401)
-      .json({ message: "Unauthorized - you need to login" });
+    return res.status(401).json({ message: "Unauthorized - you need to login" });
   }
 
   try {
     const decoded = verifyToken(token) as DecodedToken;
 
-    const authUser = await getUserByIdService(decoded.id, "ADMIN");
+    const authUser = await getUserByIdService(decoded.id,decoded.role);
 
     if (!authUser) {
-      return response
-        .status(401)
-        .json({ message: "Unauthorized - user not found" });
+      return res.status(401).json({ message: "Unauthorized - user not found" });
     }
 
-    request.user = {
+    req.user = {
       id: authUser.id,
       name: authUser.name,
       role: authUser.role,
     };
 
-    return next();
+    next();
   } catch (error) {
-    return response
-      .status(401)
-      .json({ message: "Unauthorized - invalid token" });
+    return res.status(401).json({ message: "Unauthorized - invalid token" });
   }
 };
 
