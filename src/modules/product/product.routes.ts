@@ -15,7 +15,8 @@ router.get("/:id", productController.getByIdProductsController);
 router.post(
   "/",
   protectAuth,
-  requireRole([Role.ADMIN]),validateRequest(createProductSchema),
+  requireRole([Role.ADMIN]),
+  validateRequest(createProductSchema),
   productController.createProductController
 );
 

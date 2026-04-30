@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.34
+    image: reinsaemani/ecommerce-backend:v1.0.35
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -30,5 +30,29 @@ services:
       timeout: 5s
       retries: 10
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    volumes:
+    - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+
 volumes:
   mysql_data:
+  grafana_data:

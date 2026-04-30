@@ -11,6 +11,8 @@ import productRoutes from "./modules/product/product.routes";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import metricsRoutes from "./infrastructure/monitoring/metrics.routes";
+import { httpRequestCounter } from "./infrastructure/monitoring/requestCounter";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -51,11 +53,16 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 
-
-// Routes
-// app.get("/", (req, res) => {
-//   res.send("Hello World!");
-// });
+app.use((req, res, next) => {
+  res.on("finish", () => {
+    httpRequestCounter.inc({
+      method: req.method,
+      route: req.path,
+      status: res.statusCode,
+    });
+  });
+  next();
+});
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK", uptime: process.uptime() });
@@ -73,6 +80,8 @@ app.use("/auth", authRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
+app.use("/metrics", metricsRoutes);
+
 
 
 // Not Found Middleware
