@@ -59,25 +59,24 @@ app.use((req, res, next) => {
   const end = httpRequestDuration.startTimer();
 
   res.on("finish", () => {
+    const route =
+      req.route?.path ||
+      req.baseUrl ||
+      req.path;
+
     end({
       method: req.method,
-      route: req.path,
+      route,
       status: res.statusCode,
     });
-  });
 
-  next();
-});
-
-
-app.use((req, res, next) => {
-  res.on("finish", () => {
     httpRequestCounter.inc({
       method: req.method,
-      route: req.path,
-      status: res.statusCode,
+      route,
+      status: String(res.statusCode),
     });
   });
+
   next();
 });
 
