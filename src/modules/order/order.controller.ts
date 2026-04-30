@@ -24,8 +24,18 @@ export const createOrderController = async (req: any, res: Response) => {
 };
 
 export const getAllOrdersController = async (req: any, res: Response) => {
-  const orders = await orderService.getOrdersByUserService(req.user.id, req.user.role);
-  res.json(orders);
+  const orders = await orderService.getOrdersByUserService(
+    req.user.id,
+    req.user.role
+  );
+
+  return res.json({
+    success: true,
+    message: orders.length
+      ? "Orders retrieved successfully"
+      : "No orders found for this user",
+    data: orders,
+  });
 };
 
 export const getByIdOrderController = async (req: Request, res: Response) => {
