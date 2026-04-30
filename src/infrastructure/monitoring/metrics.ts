@@ -1,6 +1,5 @@
 import client from "prom-client";
 
-const register = new client.Registry();
-client.collectDefaultMetrics({ register });
+export const register = new client.Registry();
 
-export { register };
+client.collectDefaultMetrics({ register });
