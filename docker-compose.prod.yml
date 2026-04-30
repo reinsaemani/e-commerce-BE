@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.35
+    image: reinsaemani/ecommerce-backend:v1.0.36
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -48,7 +48,9 @@ services:
     depends_on:
       - prometheus
     volumes:
-    - grafana_data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
