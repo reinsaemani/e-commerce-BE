@@ -13,6 +13,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import metricsRoutes from "./infrastructure/monitoring/metrics.routes";
 import { httpRequestCounter } from "./infrastructure/monitoring/requestCounter";
+import { httpRequestDuration } from "./infrastructure/monitoring/requestDuration";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -43,6 +44,7 @@ const loginLimiter = rateLimit({
 });
 
 
+
 // Middleware
 app.use(cors(corsOptions));
 app.use(helmet());
@@ -51,6 +53,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(requestLogger);
+
+
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+
+  res.on("finish", () => {
+    end({
+      method: req.method,
+      route: req.path,
+      status: res.statusCode,
+    });
+  });
+
+  next();
+});
 
 
 app.use((req, res, next) => {
