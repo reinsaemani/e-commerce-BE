@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.52
+    image: reinsaemani/ecommerce-backend:v1.0.53
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -78,10 +78,8 @@ services:
     container_name: alertmanager
     ports:
       - "9093:9093"
-    env_file:
-      - .env
     volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./alertmanager/alertmanager.generated.yml:/etc/alertmanager/alertmanager.yml
     networks:
       - e-commerce-net
 

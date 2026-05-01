@@ -84,11 +84,11 @@ jobs:
             set -e
             cd ~/e-commerce-BE
 
-            git fetch origin
-            git reset --hard origin/main
+            git pull origin main
+
+            envsubst < alertmanager/alertmanager.yml.template > alertmanager/alertmanager.generated.yml
 
             docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml pull
             docker-compose -f docker-compose.prod.yml up -d
 
             sleep 10
