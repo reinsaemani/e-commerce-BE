@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.48
+    image: reinsaemani/ecommerce-backend:v1.0.49
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -38,8 +38,8 @@ services:
     image: prom/prometheus
     container_name: prometheus
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
     ports:
       - "9090:9090"
     depends_on:
