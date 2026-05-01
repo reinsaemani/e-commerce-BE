@@ -1,6 +1,6 @@
 services:
   backend:
-    image: reinsaemani/ecommerce-backend:v1.0.45
+    image: reinsaemani/ecommerce-backend:v1.0.46
     container_name: e-commerce-backend
     ports:
       - "5050:5050"
@@ -10,6 +10,8 @@ services:
       db:
         condition: service_healthy
     command: pnpm start
+    networks:
+      - e-commerce-net
 
   db:
     image: mysql:8
@@ -29,6 +31,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - e-commerce-net
 
   prometheus:
     image: prom/prometheus
@@ -39,6 +43,9 @@ services:
       - "9090:9090"
     depends_on:
       - backend
+      - node-exporter
+    networks:
+      - e-commerce-net
 
   grafana:
     image: grafana/grafana
@@ -54,7 +61,25 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
+    networks:
+      - e-commerce-net
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /var/lib/node_exporter/textfile_collector:/var/lib/node_exporter/textfile_collector
+    command:
+      - --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+    networks:
+      - e-commerce-net
 
 volumes:
   mysql_data:
   grafana_data:
+
+networks:
+  e-commerce-net:
+    driver: bridge
