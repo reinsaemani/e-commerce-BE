@@ -1,0 +1,20 @@
+groups:
+  - name: mysql-backup-alerts
+    rules:
+      - alert: MySQLBackupFailed
+        expr: mysql_backup_status == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL backup FAILED"
+          description: "Backup status is 0 for more than 5 minutes"
+
+      - alert: MySQLBackupStale
+        expr: (time() - mysql_backup_last_success_timestamp) > 86400
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL backup too old"
+          description: "No successful backup in last 24 hours"
