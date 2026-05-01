@@ -4,6 +4,11 @@ global:
 route:
   receiver: telegram
 
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+
 receivers:
   - name: telegram
     telegram_configs:
@@ -12,13 +17,16 @@ receivers:
         parse_mode: "Markdown"
         disable_notifications: false
         message: |
-          🚨 ALERT: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          🚨 *ALERT TRIGGERED*
 
-          📝 Detail:
-          {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
-
-          🔥 Severity:
-          {{ range .Alerts }}{{ .Labels.severity }}{{ end }}
+          {{ range .Alerts }}
+          ------------------------
+          📛 *Name:* {{ .Annotations.summary }}
+          📦 *Instance:* {{ .Labels.instance }}
+          📝 *Detail:* {{ .Annotations.description }}
+          🔥 *Severity:* {{ .Labels.severity }}
+          ⏰ *Time:* {{ .StartsAt }}
+          ------------------------
+          {{ end }}
 
           📊 Status: {{ .Status }}
-          ⏰ Time: {{ .CommonLabels.alertname }}
