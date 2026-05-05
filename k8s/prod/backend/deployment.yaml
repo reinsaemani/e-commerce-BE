@@ -4,7 +4,7 @@ metadata:
   name: backend
   namespace: prod
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: backend
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: e-commerce-backend:prod
+          image: nginx:alpine   # nanti di override CI/CD
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5050
@@ -30,20 +30,16 @@ spec:
                   name: db-secret
                   key: DATABASE_URL
 
-          # ✅ HEALTH CHECK (WAJIB)
           livenessProbe:
             httpGet:
               path: /health
               port: 5050
             initialDelaySeconds: 20
             periodSeconds: 10
-            failureThreshold: 3
 
-          # ✅ READY CHECK (BIAR TRAFFIC TIDAK MASUK TERLALU CEPAT)
           readinessProbe:
             httpGet:
               path: /health
               port: 5050
             initialDelaySeconds: 5
             periodSeconds: 5
-            failureThreshold: 3

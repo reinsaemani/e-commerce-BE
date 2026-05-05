@@ -39,7 +39,7 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
 
 # =========================
-# DEPLOY TO STAGING
+# DEPLOY STAGING
 # =========================
   deploy-staging:
     needs: build
@@ -51,41 +51,24 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure kubeconfig
+      - name: Set kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      # =========================
-      # FIX: CREATE NAMESPACE FIRST
-      # =========================
-      - name: Create Namespace (STAGING)
-        run: |
-          kubectl apply -f k8s/staging/namespace.yaml
+      - name: Create Namespace
+        run: kubectl apply -f k8s/staging/namespace.yaml
 
-      # =========================
-      # APPLY RESOURCES SAFELY
-      # =========================
-      - name: Deploy STAGING (Infra)
-        run: |
-          kubectl apply -f k8s/staging/mysql/
-          kubectl apply -f k8s/staging/
+      - name: Apply All Staging Resources
+        run: kubectl apply -f k8s/staging/
 
-      - name: Update Backend Image
+      - name: Update Image Backend
         run: |
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
-          kubectl rollout status deployment/backend -n staging
-
-      - name: Wait Backend Ready
-        run: |
-          kubectl rollout status deployment/backend -n staging --timeout=120s
-
-      - name: Prisma Migrate (STAGING)
-        run: |
-          kubectl exec deploy/backend -n staging -- sh -c "pnpm prisma migrate deploy"
+          kubectl rollout status deployment/backend -n staging --timeout=180s
 
 # =========================
-# DEPLOY TO PROD
+# DEPLOY PROD
 # =========================
   deploy-prod:
     if: github.event_name == 'release'
@@ -98,32 +81,18 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure kubeconfig
+      - name: Set kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      # =========================
-      # FIX: CREATE NAMESPACE FIRST
-      # =========================
-      - name: Create Namespace (PROD)
-        run: |
-          kubectl apply -f k8s/prod/namespace.yaml
+      - name: Create Namespace
+        run: kubectl apply -f k8s/prod/namespace.yaml
 
-      - name: Deploy PROD (Infra)
-        run: |
-          kubectl apply -f k8s/prod/mysql/
-          kubectl apply -f k8s/prod/
+      - name: Apply All Prod Resources
+        run: kubectl apply -f k8s/prod/
 
-      - name: Update Backend Image
+      - name: Update Image Backend
         run: |
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n prod
-          kubectl rollout status deployment/backend -n prod
-
-      - name: Wait Backend Ready
-        run: |
-          kubectl rollout status deployment/backend -n prod --timeout=120s
-
-      - name: Prisma Migrate (PROD)
-        run: |
-          kubectl exec deploy/backend -n prod -- sh -c "pnpm prisma migrate deploy"
+          kubectl rollout status deployment/backend -n prod --timeout=180s
