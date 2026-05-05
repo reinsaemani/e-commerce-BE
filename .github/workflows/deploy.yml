@@ -60,7 +60,7 @@ jobs:
 
       - name: Apply Staging
         run: |
-          kubectl apply -n staging -f k8s/staging/
+          kubectl apply -f k8s/staging/
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
           kubectl rollout status deployment/backend -n staging --timeout=180s
 
