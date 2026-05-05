@@ -3,8 +3,8 @@ name: Kubernetes CI/CD
 on:
   push:
     branches: ["main"]
-  release:
-    types: [created]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 env:
@@ -13,7 +13,7 @@ env:
 jobs:
 
 # =========================
-# BUILD IMAGE (ONLY MAIN + TAG)
+# BUILD (MAIN + TAG)
 # =========================
   build:
     runs-on: ubuntu-latest
@@ -28,14 +28,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push (latest + sha)
+      - name: Build & Push latest + sha
         run: |
           docker build -f Dockerfile.prod -t $IMAGE:latest .
           docker tag $IMAGE:latest $IMAGE:${GITHUB_SHA}
           docker push $IMAGE:latest
           docker push $IMAGE:${GITHUB_SHA}
 
-      - name: Build & Push TAG version (only release)
+      - name: Build TAG version
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           docker tag $IMAGE:latest $IMAGE:${GITHUB_REF_NAME}
@@ -60,7 +60,7 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Deploy STAGING
+      - name: Deploy staging
         run: |
           kubectl apply -f k8s/staging/
           kubectl set image deployment/backend backend=$IMAGE:latest -n staging
@@ -71,6 +71,7 @@ jobs:
 # =========================
   deploy-prod:
     if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
@@ -84,7 +85,7 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Deploy PROD
+      - name: Deploy prod
         run: |
           kubectl apply -f k8s/prod/
           kubectl set image deployment/backend backend=$IMAGE:${GITHUB_REF_NAME} -n prod
