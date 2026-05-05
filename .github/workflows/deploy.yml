@@ -61,6 +61,8 @@ jobs:
       - name: Apply Staging
         run: |
           kubectl apply -f k8s/staging/
+          kubectl apply -f k8s/staging/backend/
+          kubectl apply -f k8s/staging/mysql/
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
           kubectl rollout status deployment/backend -n staging --timeout=180s
 
@@ -108,5 +110,7 @@ jobs:
       - name: Apply Prod
         run: |
           kubectl apply -f k8s/prod/
+          kubectl apply -f k8s/prod/backend/
+          kubectl apply -f k8s/prod/mysql/
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
