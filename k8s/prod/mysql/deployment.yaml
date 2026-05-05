@@ -27,6 +27,8 @@ spec:
               value: test
             - name: MYSQL_PASSWORD
               value: test
+            - name: DATABASE_URL
+              value: "mysql://test:test@db:3306/ecommerce"
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: reinsaemani/ecommerce-backend:v1.0.69
+          image: reinsaemani/ecommerce-backend:v1.0.70
           imagePullPolicy: Always
           ports:
             - containerPort: 5050
@@ -23,13 +23,20 @@ spec:
           env:
             - name: APP_ENV
               value: "production"
+            - name: DATABASE_HOST
+              value: "db"
+            - name: DATABASE_USER
+              value: "test"
+            - name: DATABASE_PASSWORD
+              value: "test"
+            - name: DATABASE_NAME
+              value: "ecommerce"
+            - name: DATABASE_PORT
+              value: "3306"  
             - name: PORT
               value: "5050"
             - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: db-secret
-                  key: DATABASE_URL
+              value: "mysql://test:test@db:3306/ecommerce"
 
           livenessProbe:
             httpGet:
