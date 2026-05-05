@@ -107,6 +107,6 @@ jobs:
 
       - name: Apply Prod
         run: |
-          kubectl apply -n prod -f k8s/prod/
+          kubectl apply -f k8s/prod/
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
