@@ -3,19 +3,19 @@ name: Kubernetes CI/CD
 on:
   push:
     branches: ["main"]
-    tags:
-      - "v*"
+  tags:
+    - "v*"
   workflow_dispatch:
 
 env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
 
+# =========================
+# BUILD (ONLY MAIN)
+# =========================
 jobs:
-
-# =========================
-# BUILD (MAIN + TAG)
-# =========================
   build:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
 
     steps:
@@ -28,25 +28,44 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push latest + sha
-        run: |
-          docker build -f Dockerfile.prod -t $IMAGE:latest .
-          docker tag $IMAGE:latest $IMAGE:${GITHUB_SHA}
-          docker push $IMAGE:latest
-          docker push $IMAGE:${GITHUB_SHA}
-
-      - name: Build TAG version
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          docker tag $IMAGE:latest $IMAGE:${GITHUB_REF_NAME}
-          docker push $IMAGE:${GITHUB_REF_NAME}
+      - name: Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
 
 # =========================
-# DEPLOY STAGING (MAIN ONLY)
+# RELEASE (TAG ONLY)
 # =========================
-  deploy-staging:
-    if: github.ref == 'refs/heads/main'
-    needs: build
+  release:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull latest
+        run: docker pull $IMAGE:latest
+
+      - name: Tag version
+        run: docker tag $IMAGE:latest $IMAGE:${{ github.ref_name }}
+
+      - name: Push version
+        run: docker push $IMAGE:${{ github.ref_name }}
+
+# =========================
+# DEPLOY (TAG ONLY → KUBERNETES)
+# =========================
+  deploy:
+    if: github.ref_type == 'tag'
+    needs: release
     runs-on: ubuntu-latest
 
     steps:
@@ -60,33 +79,11 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Deploy staging
-        run: |
-          kubectl apply -f k8s/staging/
-          kubectl set image deployment/backend backend=$IMAGE:latest -n staging
-          kubectl rollout status deployment/backend -n staging --timeout=180s
-
-# =========================
-# DEPLOY PROD (TAG ONLY)
-# =========================
-  deploy-prod:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
-
-      - name: Deploy prod
+      - name: Apply manifests
         run: |
           kubectl apply -f k8s/prod/
-          kubectl set image deployment/backend backend=$IMAGE:${GITHUB_REF_NAME} -n prod
+
+      - name: Update image (TAG VERSION)
+        run: |
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
