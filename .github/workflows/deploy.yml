@@ -3,6 +3,7 @@ name: Kubernetes CI/CD
 on:
   push:
     branches: ["main"]
+  push:
     tags:
       - "v*"
   workflow_dispatch:
@@ -13,9 +14,10 @@ env:
 jobs:
 
 # =========================
-# BUILD IMAGE
+# BUILD (ONLY MAIN)
 # =========================
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -52,28 +54,25 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Set kubeconfig
+      - name: Kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Create Namespace
-        run: kubectl apply -f k8s/staging/namespace.yaml
-
-      - name: Apply Staging
-        run: kubectl apply -f k8s/staging/
-
-      - name: Update Image
+      - name: Apply staging
         run: |
-          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
+          kubectl apply -f k8s/staging/
           kubectl rollout status deployment/backend -n staging --timeout=180s
 
+      - name: Update image
+        run: |
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
+
 # =========================
-# DEPLOY PROD (TAG v*)
+# DEPLOY PROD (TAG ONLY)
 # =========================
   deploy-prod:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
     runs-on: ubuntu-latest
 
     steps:
@@ -82,18 +81,18 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Set kubeconfig
+      - name: Kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Create Namespace
+      - name: Ensure namespace
         run: kubectl apply -f k8s/prod/namespace.yaml
 
-      - name: Apply Prod
+      - name: Apply prod
         run: kubectl apply -f k8s/prod/
 
-      - name: Update Image (TAG VERSION)
+      - name: Update image
         run: |
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
