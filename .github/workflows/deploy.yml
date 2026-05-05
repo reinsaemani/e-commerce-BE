@@ -3,9 +3,9 @@ name: Kubernetes CI/CD
 on:
   push:
     branches: ["main"]
+    tags:
+      - "v*"
   workflow_dispatch:
-  release:
-    types: [created]
 
 env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
@@ -39,9 +39,10 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
 
 # =========================
-# DEPLOY STAGING
+# DEPLOY STAGING (MAIN)
 # =========================
   deploy-staging:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
 
@@ -59,19 +60,19 @@ jobs:
       - name: Create Namespace
         run: kubectl apply -f k8s/staging/namespace.yaml
 
-      - name: Apply All Staging Resources
+      - name: Apply Staging
         run: kubectl apply -f k8s/staging/
 
-      - name: Update Image Backend
+      - name: Update Image
         run: |
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
           kubectl rollout status deployment/backend -n staging --timeout=180s
 
 # =========================
-# DEPLOY PROD
+# DEPLOY PROD (TAG v*)
 # =========================
   deploy-prod:
-    if: github.event_name == 'release'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
 
@@ -89,10 +90,10 @@ jobs:
       - name: Create Namespace
         run: kubectl apply -f k8s/prod/namespace.yaml
 
-      - name: Apply All Prod Resources
+      - name: Apply Prod
         run: kubectl apply -f k8s/prod/
 
-      - name: Update Image Backend
+      - name: Update Image (TAG VERSION)
         run: |
-          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n prod
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
