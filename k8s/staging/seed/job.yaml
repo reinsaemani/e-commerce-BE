@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-seed
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+
+      initContainers:
+        - name: wait-db
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for DB..."
+              until nc -z db 3306; do
+                sleep 2
+              done
+
+      containers:
+        - name: seed
+          image: belajar2_backend:latest
+          imagePullPolicy: IfNotPresent
+
+          command: ["pnpm"]
+          args: ["run", "seed"]
+
+          env:
+            - name: DATABASE_URL
+              value: "mysql://test:test@db:3306/ecommerce?allowPublicKeyRetrieval=true&ssl=false"

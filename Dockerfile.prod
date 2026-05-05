@@ -21,7 +21,6 @@ RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV DATABASE_URL="mysql://dummy:dummy@localhost:3306/dummy"
 
 RUN pnpm build
 

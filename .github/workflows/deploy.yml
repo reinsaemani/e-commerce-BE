@@ -1,29 +1,27 @@
-name: Docker CI/CD
+name: Kubernetes CI/CD
 
 on:
   push:
     branches: ["main"]
-    tags:
-      - "v*"
   workflow_dispatch:
+  release:
+    types: [created]
 
 env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
 
-# =========================
-# BUILD (push ke main)
-# =========================
 jobs:
+
+# =========================
+# BUILD IMAGE
+# =========================
   build:
-    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:latest
 
       - uses: docker/login-action@v3
         with:
@@ -39,60 +37,60 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
 
-  # =========================
-  # RELEASE (tag → version)
-  # =========================
-  release:
-    if: github.ref_type == 'tag'
+# =========================
+# DEPLOY TO STAGING
+# =========================
+  deploy-staging:
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: actions/checkout@v4
 
-      - name: Pull latest
-        run: docker pull $IMAGE:latest
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
-      - name: Tag version
-        run: docker tag $IMAGE:latest $IMAGE:${{ github.ref_name }}
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Push version
-        run: docker push $IMAGE:${{ github.ref_name }}
+      - name: Deploy to STAGING
+        run: |
+          kubectl apply -f k8s/staging/
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
+          kubectl rollout status deployment/backend -n staging
 
-  # =========================
-  # DEPLOY (tag → VPS)
-  # =========================
-  deploy:
-    needs: release
-    if: github.ref_type == 'tag'
+      - name: Prisma Migrate (STAGING)
+        run: |
+          kubectl exec deploy/backend -n staging -- sh -c "pnpm prisma migrate deploy"
+
+# =========================
+# DEPLOY TO PROD
+# =========================
+  deploy-prod:
+    if: github.event_name == 'release'
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-            cd ~/e-commerce-BE
+      - uses: actions/checkout@v4
 
-            git pull origin main
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
-            envsubst < alertmanager/alertmanager.yml.template > alertmanager/alertmanager.generated.yml
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml up -d
+      - name: Deploy to PROD
+        run: |
+          kubectl apply -f k8s/prod/
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n prod
+          kubectl rollout status deployment/backend -n prod
 
-            sleep 10
-
-            docker exec e-commerce-backend sh -c "pnpm prisma migrate deploy"
-
-            docker ps
+      - name: Prisma Migrate (PROD)
+        run: |
+          kubectl exec deploy/backend -n prod -- sh -c "pnpm prisma migrate deploy"
