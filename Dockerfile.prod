@@ -26,21 +26,23 @@ RUN pnpm build
 FROM node:20-alpine
 
 WORKDIR /app
+
 RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 
 ENV APP_ENV=production
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
 
-# install deps
+# 🔥 WAJIB ADA
+ENV DATABASE_URL="mysql://dummy:dummy@localhost:3306/dummy"
+
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# copy dari builder ✅ sekarang valid
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# generate ulang prisma
+# 🔥 sekarang aman
 RUN pnpm prisma generate
 
 EXPOSE 5050
