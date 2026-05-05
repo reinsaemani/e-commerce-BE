@@ -3,17 +3,18 @@ name: Kubernetes CI/CD
 on:
   push:
     branches: ["main"]
-  tags:
-    - "v*"
+    tags:
+      - "v*"
   workflow_dispatch:
 
 env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/ecommerce-backend
 
+jobs:
+
 # =========================
 # BUILD (ONLY MAIN)
 # =========================
-jobs:
   build:
     if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
@@ -39,6 +40,31 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
 
 # =========================
+# DEPLOY STAGING (MAIN ONLY)
+# =========================
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Apply Staging
+        run: |
+          kubectl apply -n staging -f k8s/staging/
+          kubectl set image deployment/backend backend=${{ env.IMAGE }}:latest -n staging
+          kubectl rollout status deployment/backend -n staging --timeout=180s
+
+# =========================
 # RELEASE (TAG ONLY)
 # =========================
   release:
@@ -61,9 +87,9 @@ jobs:
         run: docker push $IMAGE:${{ github.ref_name }}
 
 # =========================
-# DEPLOY (TAG ONLY → KUBERNETES)
+# DEPLOY PROD (TAG ONLY)
 # =========================
-  deploy:
+  deploy-prod:
     if: github.ref_type == 'tag'
     needs: release
     runs-on: ubuntu-latest
@@ -79,11 +105,8 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
 
-      - name: Apply manifests
+      - name: Apply Prod
         run: |
-          kubectl apply -f k8s/prod/
-
-      - name: Update image (TAG VERSION)
-        run: |
+          kubectl apply -n prod -f k8s/prod/
           kubectl set image deployment/backend backend=${{ env.IMAGE }}:${{ github.ref_name }} -n prod
           kubectl rollout status deployment/backend -n prod --timeout=180s
